@@ -1,6 +1,11 @@
 """
 فایل اصلی پروژه - سامانه کلاس مجازی
 """
+# ==================== Monkey Patch (باید اول باشه!) ====================
+import eventlet
+eventlet.monkey_patch()
+
+# ==================== Importها ====================
 from flask import Flask, render_template, request, redirect
 from flask import url_for, flash, send_from_directory, session
 from flask_login import LoginManager, login_user, login_required
@@ -45,7 +50,7 @@ with app.app_context():
         db.create_all()
         os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
         print('✅ دیتابیس آماده شد')
-        
+
         # ساخت کاربران پیش‌فرض
         if not User.query.filter_by(username='admin').first():
             admin = User(
@@ -57,7 +62,7 @@ with app.app_context():
             )
             db.session.add(admin)
             print('✅ ادمین ساخته شد')
-        
+
         if not User.query.filter_by(username='teacher').first():
             teacher = User(
                 username='teacher',
@@ -68,7 +73,7 @@ with app.app_context():
             )
             db.session.add(teacher)
             print('✅ استاد ساخته شد')
-        
+
         if not User.query.filter_by(username='student').first():
             student = User(
                 username='student',
@@ -79,7 +84,7 @@ with app.app_context():
             )
             db.session.add(student)
             print('✅ دانشجو ساخته شد')
-        
+
         db.session.commit()
         print('✅ همه کاربران آماده هستند')
     except Exception as e:
@@ -640,7 +645,6 @@ def handle_message(data):
 
 # ==================== اجرا ====================
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get('PORT', 5000))
     print(f'🚀 Server running on port {port}')
     socketio.run(
