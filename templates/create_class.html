@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}ساخت کلاس{% endblock %}
+{% block content %}
+
+<div class="auth-box wide">
+    <h2>➕ ساخت کلاس جدید</h2>
+    <form method="post">
+        <label>عنوان کلاس *</label>
+        <input type="text" name="title" required>
+
+        <label>توضیحات</label>
+        <textarea name="description" rows="3"></textarea>
+
+        <label>دسته‌بندی</label>
+        <input type="text" name="category" placeholder="مثلاً: برنامه‌نویسی، ریاضی، زبان">
+
+        <label>لینک جلسه لایو *</label>
+        <input type="url" name="meeting_url" required value="https://meet.jit.si/">
+
+        <label>زمان شروع</label>
+        <input type="datetime-local" name="start_time">
+
+        <hr style="margin: 25px 0;">
+
+        <h3 style="color: #2b6cff; margin-bottom: 15px;">🎬 ویدیوی آموزشی</h3>
+
+        <label>منبع</label>
+        <select name="video_type">
+            <option value="aparat">آپارات</option>
+            <option value="youtube">یوتیوب</option>
+            <option value="direct">لینک مستقیم</option>
+        </select>
+
+        <label>لینک ویدیو</label>
+        <input type="text" name="video_url" placeholder="لینک ویدیو">
+
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 20px;">
+            ساخت کلاس
+        </button>
+    </form>
+</div>
+
+{% endblock %}

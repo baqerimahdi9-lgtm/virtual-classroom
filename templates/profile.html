@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}پروفایل{% endblock %}
+{% block content %}
+
+<div class="auth-box wide">
+    <h2>👤 پروفایل کاربری</h2>
+    <form method="post">
+        <label>نام و نام خانوادگی</label>
+        <input type="text" name="full_name" value="{{ current_user.full_name or '' }}">
+
+        <label>ایمیل</label>
+        <input type="email" name="email" value="{{ current_user.email }}" required>
+
+        <label>درباره من</label>
+        <textarea name="bio" rows="4">{{ current_user.bio or '' }}</textarea>
+
+        <label>نام کاربری</label>
+        <input type="text" value="{{ current_user.username }}" disabled>
+
+        <label>نقش</label>
+        <input type="text" value="{{ current_user.role }}" disabled>
+
+        <button type="submit" class="btn btn-primary btn-block">ذخیره</button>
+    </form>
+</div>
+
+{% endblock %}

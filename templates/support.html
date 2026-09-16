@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}پشتیبانی{% endblock %}
+{% block content %}
+
+<h2>🎫 پشتیبانی</h2>
+
+<div class="two-columns">
+    <div class="panel">
+        <h3>ارسال تیکت جدید</h3>
+        <form method="post">
+            <label>موضوع *</label>
+            <input type="text" name="subject" required>
+
+            <label>اولویت</label>
+            <select name="priority">
+                <option value="low">کم</option>
+                <option value="normal" selected>معمولی</option>
+                <option value="high">زیاد</option>
+            </select>
+
+            <label>پیام *</label>
+            <textarea name="message" rows="5" required></textarea>
+
+            <button type="submit" class="btn btn-primary btn-block">ارسال</button>
+        </form>
+    </div>
+
+    <div class="panel">
+        <h3>تیکت‌های من</h3>
+        {% for t in tickets %}
+        <div class="ticket">
+            <div class="ticket-header">
+                <b>{{ t.subject }}</b>
+                <span class="status status-{{ t.status }}">{{ t.status }}</span>
+            </div>
+            <small>اولویت: {{ t.priority }}</small>
+            <p>{{ t.message }}</p>
+            {% if t.reply %}
+            <div class="reply"><b>پاسخ:</b><br>{{ t.reply }}</div>
+            {% endif %}
+        </div>
+        {% else %}
+        <p class="muted">تیکتی ارسال نکرده‌اید.</p>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}

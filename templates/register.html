@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}ثبت‌نام{% endblock %}
+{% block content %}
+
+<div class="auth-box">
+    <h2>✨ ثبت‌نام</h2>
+    <form method="post">
+        <label>نام و نام خانوادگی</label>
+        <input type="text" name="full_name" placeholder="مثلاً: علی رضایی">
+
+        <label>نام کاربری *</label>
+        <input type="text" name="username" required autofocus minlength="3">
+
+        <label>ایمیل *</label>
+        <input type="email" name="email" required>
+
+        <label>رمز عبور * (حداقل ۶ کاراکتر)</label>
+        <input type="password" name="password" required minlength="6">
+
+        <label>کد امنیتی</label>
+        <div class="captcha-row">
+            <input type="text" name="captcha" required maxlength="5" placeholder="کد تصویر">
+            <img src="{{ url_for('captcha') }}" onclick="this.src='/captcha?' + Math.random()" alt="captcha">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">ثبت‌نام</button>
+    </form>
+    <p>حساب دارید؟ <a href="{{ url_for('login') }}">وارد شوید</a></p>
+</div>
+
+{% endblock %}

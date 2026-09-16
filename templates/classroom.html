@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}{{ classroom.title }}{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h2>📖 {{ classroom.title }}</h2>
+    <a href="{{ url_for('dashboard') }}" class="btn">بازگشت</a>
+</div>
+
+<p class="muted">{{ classroom.description or 'بدون توضیحات' }}</p>
+
+<div class="class-meta">
+    <span>👨‍🏫 {{ classroom.teacher.full_name or classroom.teacher.username }}</span>
+    {% if classroom.category %}<span class="badge">{{ classroom.category }}</span>{% endif %}
+    <span>👁️ {{ classroom.views }} بازدید</span>
+</div>
+
+<!-- ویدیو داخلی -->
+{% if classroom.video_url %}
+<div class="video-section">
+    <h3>🎬 ویدیوی آموزشی</h3>
+    <div class="video-container">
+        {% if classroom.video_type == 'aparat' %}
+            {% set aparat_id = classroom.video_url.split('/')[-1] %}
+            <iframe src="https://www.aparat.com/video/video/embed/videohash/{{ aparat_id }}/vt/frame"
+                    allowfullscreen class="video-frame"></iframe>
+        {% elif classroom.video_type == 'youtube' %}
+            {% set yt_id = classroom.video_url.split('v=')[-1].split('&')[0] %}
+            <iframe src="https://www.youtube.com/embed/{{ yt_id }}"
+                    allowfullscreen class="video-frame"></iframe>
+        {% elif classroom.video_type == 'direct' %}
+            <video controls class="video-frame">
+                <source src="{{ classroom.video_url }}" type="video/mp4">
+            </video>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- ثبت‌نام در کلاس -->
+{% if not is_enrolled and current_user.role == 'student' %}
+<div class="enroll-box">
+    <p>📝 برای دسترسی به فایل‌ها و چت، در کلاس ثبت‌نام کنید.</p>
+    <form method="post" action="{{ url_for('enroll_class', class_id=classroom.id) }}">
+        <button class="btn btn-primary">ثبت‌نام در کلاس</button>
+    </form>
+</div>
+{% endif %}
+
+<div class="two-columns">
+    <div class="panel">
+        <h3>📁 فایل‌های آموزشی</h3>
+        <ul class="file-list">
+            {% for f in files %}
+            <li>
+                <a href="{{ url_for('download', file_id=f.id) }}">⬇️ {{ f.original_name }}</a>
+                <small class="muted">{{ (f.file_size / 1024)|round(1) }} KB</small>
+                {% if current_user.role in ['teacher', 'admin'] %}
+                    <form method="post" action="{{ url_for('delete_file', file_id=f.id) }}" style="display:inline;">
+                        <button class="btn-mini">🗑️</button>
+                    </form>
+                {% endif %}
+            </li>
+            {% else %}
+            <li class="muted">فایلی آپلود نشده.</li>
+            {% endfor %}
+        </ul>
+
+        <h3 style="margin-top: 20px;">🎬 ویدیوهای آپلودی</h3>
+        <ul class="file-list">
+            {% for v in videos %}
+            <li>
+                <a href="{{ url_for('download', file_id=v.id) }}">🎥 {{ v.original_name }}</a>
+                <small class="muted">{{ (v.file_size / 1024 / 1024)|round(1) }} MB</small>
+            </li>
+            {% else %}
+            <li class="muted">ویدیویی آپلود نشده.</li>
+            {% endfor %}
+        </ul>
+
+        {% if current_user.role in ['teacher', 'admin'] %}
+        <form action="{{ url_for('upload_file', class_id=classroom.id) }}" 
+              method="post" enctype="multipart/form-data" class="upload-form">
+            <input type="file" name="file" required>
+            <button type="submit" class="btn btn-primary">⬆️ آپلود</button>
+        </form>
+        {% endif %}
+    </div>
+
+    <div class="panel">
+        <h3>💬 چت کلاس</h3>
+        <div id="chat-box" class="chat-box"></div>
+        <div class="chat-input-row">
+            <input type="text" id="chat-input" placeholder="پیام...">
+            <button class="btn btn-primary" onclick="sendMsg()">ارسال</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+    const socket = io();
+    const room = "{{ classroom.id }}";
+    const chatBox = document.getElementById('chat-box');
+    const myId = {{ current_user.id }};
+
+    socket.emit('join', {room: room});
+
+    socket.on('message', (data) => {
+        const div = document.createElement('div');
+        div.className = 'chat-msg' + (data.user_id === myId ? ' own' : '');
+        div.innerHTML = '<b>' + data.user + '</b> <small>' + data.time + '</small><br>' + data.msg;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    });
+
+    socket.on('status', (data) => {
+        const div = document.createElement('div');
+        div.className = 'chat-status';
+        div.textContent = data.msg;
+        chatBox.appendChild(div);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    });
+
+    function sendMsg() {
+        const input = document.getElementById('chat-input');
+        const msg = input.value.trim();
+        if (msg) {
+            socket.emit('message', {room: room, msg: msg});
+            input.value = '';
+        }
+    }
+
+    document.getElementById('chat-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMsg();
+    });
+</script>
+{% endblock %}

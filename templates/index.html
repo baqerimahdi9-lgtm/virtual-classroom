@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}صفحه اصلی{% endblock %}
+{% block content %}
+
+<section class="hero">
+    <h1>🎓 سامانه کلاس مجازی حرفه‌ای</h1>
+    <p>کلاس‌های آنلاین، فایل‌های آموزشی، چت زنده و پشتیبانی</p>
+    <div class="hero-buttons">
+        <a href="{{ url_for('register') }}" class="btn btn-primary">✨ شروع کنید</a>
+        <a href="{{ url_for('login') }}" class="btn btn-outline">🔐 ورود</a>
+    </div>
+</section>
+
+<section class="stats-row">
+    <div class="stat-card">
+        <div class="stat-icon">📚</div>
+        <div class="stat-number">{{ stats.classes }}</div>
+        <div class="stat-label">کلاس فعال</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-number">{{ stats.users }}</div>
+        <div class="stat-label">کاربر</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">👨‍🏫</div>
+        <div class="stat-number">{{ stats.teachers }}</div>
+        <div class="stat-label">استاد</div>
+    </div>
+</section>
+
+<section class="features">
+    <div class="feature">
+        <div class="feature-icon">🎥</div>
+        <h3>کلاس زنده</h3>
+        <p>لایو صوتی و تصویری با Jitsi</p>
+    </div>
+    <div class="feature">
+        <div class="feature-icon">📁</div>
+        <h3>آپلود فایل و ویدیو</h3>
+        <p>مدیریت فایل‌های آموزشی</p>
+    </div>
+    <div class="feature">
+        <div class="feature-icon">💬</div>
+        <h3>چت زنده</h3>
+        <p>گفتگو با استاد و همکلاسی‌ها</p>
+    </div>
+    <div class="feature">
+        <div class="feature-icon">🔍</div>
+        <h3>جستجوی پیشرفته</h3>
+        <p>پیدا کردن سریع کلاس‌ها</p>
+    </div>
+</section>
+
+{% if classes %}
+<section class="recent-classes">
+    <h2 class="section-title">📖 کلاس‌های اخیر</h2>
+    <div class="grid">
+        {% for c in classes %}
+        <div class="card">
+            <h3>{{ c.title }}</h3>
+            <p class="muted">{{ c.description or 'بدون توضیحات' }}</p>
+            <p>👨‍🏫 <b>{{ c.teacher.full_name or c.teacher.username }}</b></p>
+            {% if c.category %}
+                <span class="badge">{{ c.category }}</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}

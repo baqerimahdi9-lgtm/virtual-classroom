@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}مدیریت تیکت‌ها{% endblock %}
+{% block content %}
+
+<h2>🎫 مدیریت تیکت‌ها</h2>
+
+<div class="filter-row">
+    <a href="{{ url_for('admin_tickets') }}" class="btn {% if not filter_status %}btn-primary{% endif %}">همه</a>
+    <a href="{{ url_for('admin_tickets', status='open') }}" class="btn {% if filter_status == 'open' %}btn-primary{% endif %}">باز</a>
+    <a href="{{ url_for('admin_tickets', status='answered') }}" class="btn {% if filter_status == 'answered' %}btn-primary{% endif %}">پاسخ داده</a>
+</div>
+
+{% for t in tickets %}
+<div class="ticket">
+    <div class="ticket-header">
+        <b>{{ t.subject }}</b>
+        <span class="status status-{{ t.status }}">{{ t.status }}</span>
+    </div>
+    <p><b>فرستنده:</b> {{ t.owner.username }} ({{ t.owner.email }})</p>
+    <p><b>اولویت:</b> {{ t.priority }}</p>
+    <p>{{ t.message }}</p>
+
+    {% if t.status != 'answered' %}
+    <form method="post" action="{{ url_for('reply_ticket', ticket_id=t.id) }}">
+        <textarea name="reply" rows="3" required placeholder="پاسخ..."></textarea>
+        <button type="submit" class="btn btn-primary">ارسال پاسخ</button>
+    </form>
+    {% else %}
+    <div class="reply"><b>پاسخ:</b><br>{{ t.reply }}</div>
+    {% endif %}
+</div>
+{% else %}
+<p class="muted">تیکتی موجود نیست.</p>
+{% endfor %}
+
+{% endblock %}

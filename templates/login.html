@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}ورود{% endblock %}
+{% block content %}
+
+<div class="auth-box">
+    <h2>🔐 ورود به حساب</h2>
+    <form method="post">
+        <label>نام کاربری</label>
+        <input type="text" name="username" required autofocus>
+
+        <label>رمز عبور</label>
+        <input type="password" name="password" required>
+
+        <label>کد امنیتی</label>
+        <div class="captcha-row">
+            <input type="text" name="captcha" required maxlength="5" placeholder="کد تصویر">
+            <img src="{{ url_for('captcha') }}" onclick="this.src='/captcha?' + Math.random()" alt="captcha">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">ورود</button>
+    </form>
+    <p>حساب ندارید؟ <a href="{{ url_for('register') }}">ثبت‌نام کنید</a></p>
+</div>
+
+{% endblock %}

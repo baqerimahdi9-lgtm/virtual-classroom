@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}داشبورد{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h2>📊 داشبورد</h2>
+    {% if current_user.role in ['teacher', 'admin'] %}
+        <a href="{{ url_for('create_class') }}" class="btn btn-primary">➕ ساخت کلاس</a>
+    {% endif %}
+</div>
+
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-icon">📚</div>
+        <div class="stat-number">{{ stats.total_classes }}</div>
+        <div class="stat-label">کل کلاس‌ها</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">📖</div>
+        <div class="stat-number">{{ stats.my_classes }}</div>
+        <div class="stat-label">کلاس‌های من</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-number">{{ stats.total_students }}</div>
+        <div class="stat-label">دانشجوها</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">💬</div>
+        <div class="stat-number">{{ stats.total_messages }}</div>
+        <div class="stat-label">پیام‌ها</div>
+    </div>
+</div>
+
+<form action="{{ url_for('search') }}" method="get" class="search-box">
+    <input type="text" name="q" placeholder="🔍 جستجوی کلاس...">
+    <button type="submit" class="btn btn-primary">جستجو</button>
+</form>
+
+<h3 class="section-title">📚 کلاس‌های موجود</h3>
+
+{% if classes %}
+<div class="grid">
+    {% for c in classes %}
+    <div class="card">
+        <h3>{{ c.title }}</h3>
+        <p class="muted">{{ c.description or 'بدون توضیحات' }}</p>
+        <p>👨‍🏫 <b>{{ c.teacher.full_name or c.teacher.username }}</b></p>
+        {% if c.category %}
+            <span class="badge">{{ c.category }}</span>
+        {% endif %}
+        <p class="muted">👁️ {{ c.views or 0 }} بازدید</p>
+        <div class="card-actions">
+            <a href="{{ url_for('classroom', class_id=c.id) }}" class="btn">📖 مشاهده</a>
+            <a href="{{ url_for('live', class_id=c.id) }}" class="btn btn-live">🔴 لایو</a>
+            {% if current_user.role in ['teacher', 'admin'] and c.teacher_id == current_user.id %}
+                <a href="{{ url_for('edit_class', class_id=c.id) }}" class="btn">✏️</a>
+                <form method="post" action="{{ url_for('delete_class', class_id=c.id) }}" style="display:inline;" onsubmit="return confirm('مطمئنی؟')">
+                    <button class="btn btn-danger">🗑️</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>📭 کلاسی موجود نیست.</p>
+    {% if current_user.role in ['teacher', 'admin'] %}
+        <a href="{{ url_for('create_class') }}" class="btn btn-primary">ساخت اولین کلاس</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
