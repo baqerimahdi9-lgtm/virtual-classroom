@@ -1,9 +1,8 @@
 """
-فایل اصلی پروژه - سامانه کلاس مجازی حرفه‌ای
+فایل اصلی پروژه - سامانه کلاس مجازی
 """
 from flask import Flask, render_template, request, redirect
 from flask import url_for, flash, send_from_directory, session
-from flask import jsonify
 from flask_login import LoginManager, login_user, login_required
 from flask_login import logout_user, current_user
 from flask_socketio import SocketIO, emit, join_room, leave_room
@@ -12,26 +11,19 @@ from werkzeug.utils import secure_filename
 from functools import wraps
 from PIL import Image, ImageDraw
 from datetime import datetime
-from sqlalchemy import or_
 import random
 import os
 import io
 import string
 import time
-import logging
 import traceback
+import logging
 
 from config import Config
-from models import (db, User, Classroom, Enrollment,
-                    FileUpload, Message, Ticket)
-
+from models import db, User, Classroom, FileUpload, Message, Ticket
 
 # ==================== لاگ‌گیری ====================
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s'
-)
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
 # ==================== راه‌اندازی ====================
@@ -47,50 +39,52 @@ login_manager.login_message = 'برای دسترسی باید وارد شوید'
 login_manager.login_message_category = 'warning'
 
 
-# ==================== ساخت دیتابیس و کاربران پیش‌فرض ====================
+# ==================== ساخت جداول و کاربران پیش‌فرض ====================
 with app.app_context():
-    db.create_all()
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-    os.makedirs(app.config['VIDEO_FOLDER'], exist_ok=True)
-    os.makedirs(app.config['FILE_FOLDER'], exist_ok=True)
-    logger.info('OK: Database ready')
-
-    # ساخت کاربران پیش‌فرض
-    if not User.query.filter_by(username='admin').first():
-        admin = User(
-            username='admin',
-            email='admin@site.com',
-            password=generate_password_hash('admin123'),
-            role='admin',
-            full_name='مدیر سیستم'
-        )
-        db.session.add(admin)
-        logger.info('Admin user created')
-
-    if not User.query.filter_by(username='teacher').first():
-        teacher = User(
-            username='teacher',
-            email='teacher@site.com',
-            password=generate_password_hash('teacher123'),
-            role='teacher',
-            full_name='استاد نمونه'
-        )
-        db.session.add(teacher)
-        logger.info('Teacher user created')
-
-    if not User.query.filter_by(username='student').first():
-        student = User(
-            username='student',
-            email='student@site.com',
-            password=generate_password_hash('student123'),
-            role='student',
-            full_name='دانشجوی نمونه'
-        )
-        db.session.add(student)
-        logger.info('Student user created')
-
-    db.session.commit()
-    logger.info('Default users ready')
+    try:
+        db.create_all()
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        print('✅ دیتابیس آماده شد')
+        
+        # ساخت کاربران پیش‌فرض
+        if not User.query.filter_by(username='admin').first():
+            admin = User(
+                username='admin',
+                email='admin@site.com',
+                password=generate_password_hash('admin123'),
+                role='admin',
+                full_name='مدیر سیستم'
+            )
+            db.session.add(admin)
+            print('✅ ادمین ساخته شد')
+        
+        if not User.query.filter_by(username='teacher').first():
+            teacher = User(
+                username='teacher',
+                email='teacher@site.com',
+                password=generate_password_hash('teacher123'),
+                role='teacher',
+                full_name='استاد نمونه'
+            )
+            db.session.add(teacher)
+            print('✅ استاد ساخته شد')
+        
+        if not User.query.filter_by(username='student').first():
+            student = User(
+                username='student',
+                email='student@site.com',
+                password=generate_password_hash('student123'),
+                role='student',
+                full_name='دانشجوی نمونه'
+            )
+            db.session.add(student)
+            print('✅ دانشجو ساخته شد')
+        
+        db.session.commit()
+        print('✅ همه کاربران آماده هستند')
+    except Exception as e:
+        print(f'❌ خطا در راه‌اندازی: {e}')
+        traceback.print_exc()
 
 
 # ==================== لود کاربر ====================
@@ -174,9 +168,21 @@ def index():
         }
         return render_template('index.html', classes=classes, stats=stats)
     except Exception as e:
-        logger.error(f'Error in index: {str(e)}')
-        logger.error(traceback.format_exc())
-        return f"<h1>Error</h1><pre>{traceback.format_exc()}</pre>", 500
+        error_details = traceback.format_exc()
+        print(f'❌ خطای index: {e}')
+        print(error_details)
+        return f"""
+        <html>
+        <head><title>Error</title></head>
+        <body style="font-family: monospace; padding: 20px; background: #fee; direction: ltr;">
+            <h1 style="color: red;">Server Error</h1>
+            <h2>Error Type:</h2>
+            <pre style="background: #fff; padding: 10px; border: 1px solid #ccc;">{type(e).__name__}: {str(e)}</pre>
+            <h2>Full Traceback:</h2>
+            <pre style="background: #fff; padding: 10px; border: 1px solid #ccc; overflow: auto;">{error_details}</pre>
+        </body>
+        </html>
+        """, 500
 
 
 # ==================== ثبت‌نام ====================
@@ -290,6 +296,7 @@ def dashboard():
 @app.route('/search')
 @login_required
 def search():
+    from sqlalchemy import or_
     q = request.args.get('q', '').strip()
     category = request.args.get('category', '').strip()
 
@@ -299,26 +306,13 @@ def search():
         query = query.filter(
             or_(
                 Classroom.title.ilike(f'%{q}%'),
-                Classroom.description.ilike(f'%{q}%'),
-                Classroom.category.ilike(f'%{q}%')
+                Classroom.description.ilike(f'%{q}%')
             )
         )
 
-    if category:
-        query = query.filter_by(category=category)
-
     results = query.order_by(Classroom.created_at.desc()).all()
 
-    categories = db.session.query(Classroom.category)\
-                           .filter(Classroom.category.isnot(None))\
-                           .distinct().all()
-    categories = [c[0] for c in categories if c[0]]
-
-    return render_template('search.html',
-                           results=results,
-                           q=q,
-                           category=category,
-                           categories=categories)
+    return render_template('search.html', results=results, q=q, category=category, categories=[])
 
 
 # ==================== ساخت کلاس ====================
@@ -413,41 +407,10 @@ def classroom(class_id):
     files = FileUpload.query.filter_by(classroom_id=class_id, file_type='file').all()
     videos = FileUpload.query.filter_by(classroom_id=class_id, file_type='video').all()
 
-    is_enrolled = Enrollment.query.filter_by(
-        student_id=current_user.id,
-        classroom_id=class_id
-    ).first() is not None
-
     return render_template('classroom.html',
                            classroom=classroom_obj,
                            files=files,
-                           videos=videos,
-                           is_enrolled=is_enrolled)
-
-
-# ==================== ثبت‌نام در کلاس ====================
-@app.route('/class/<int:class_id>/enroll', methods=['POST'])
-@login_required
-def enroll_class(class_id):
-    classroom_obj = Classroom.query.get_or_404(class_id)
-
-    existing = Enrollment.query.filter_by(
-        student_id=current_user.id,
-        classroom_id=class_id
-    ).first()
-
-    if existing:
-        flash('قبلاً در این کلاس ثبت‌نام کرده‌اید', 'info')
-    else:
-        enrollment = Enrollment(
-            student_id=current_user.id,
-            classroom_id=class_id
-        )
-        db.session.add(enrollment)
-        db.session.commit()
-        flash('با موفقیت در کلاس ثبت‌نام شدید', 'success')
-
-    return redirect(url_for('classroom', class_id=class_id))
+                           videos=videos)
 
 
 # ==================== لایو ====================
@@ -676,9 +639,10 @@ def handle_message(data):
 
 
 # ==================== اجرا ====================
-if __name__ == '__main__':
+if __name__ == "__main__":
+    import os
     port = int(os.environ.get('PORT', 5000))
-    logger.info(f'Starting server on port {port}')
+    print(f'🚀 Server running on port {port}')
     socketio.run(
         app,
         host='0.0.0.0',
