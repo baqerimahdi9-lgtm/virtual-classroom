@@ -18,10 +18,20 @@ import os
 import io
 import string
 import time
+import logging
+import traceback
 
 from config import Config
 from models import (db, User, Classroom, Enrollment,
                     FileUpload, Message, Ticket)
+
+
+# ==================== لاگ‌گیری ====================
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
 # ==================== راه‌اندازی ====================
@@ -36,12 +46,51 @@ login_manager.login_view = 'login'
 login_manager.login_message = 'برای دسترسی باید وارد شوید'
 login_manager.login_message_category = 'warning'
 
+
+# ==================== ساخت دیتابیس و کاربران پیش‌فرض ====================
 with app.app_context():
     db.create_all()
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs(app.config['VIDEO_FOLDER'], exist_ok=True)
     os.makedirs(app.config['FILE_FOLDER'], exist_ok=True)
-    print('OK: Database ready')
+    logger.info('OK: Database ready')
+
+    # ساخت کاربران پیش‌فرض
+    if not User.query.filter_by(username='admin').first():
+        admin = User(
+            username='admin',
+            email='admin@site.com',
+            password=generate_password_hash('admin123'),
+            role='admin',
+            full_name='مدیر سیستم'
+        )
+        db.session.add(admin)
+        logger.info('Admin user created')
+
+    if not User.query.filter_by(username='teacher').first():
+        teacher = User(
+            username='teacher',
+            email='teacher@site.com',
+            password=generate_password_hash('teacher123'),
+            role='teacher',
+            full_name='استاد نمونه'
+        )
+        db.session.add(teacher)
+        logger.info('Teacher user created')
+
+    if not User.query.filter_by(username='student').first():
+        student = User(
+            username='student',
+            email='student@site.com',
+            password=generate_password_hash('student123'),
+            role='student',
+            full_name='دانشجوی نمونه'
+        )
+        db.session.add(student)
+        logger.info('Student user created')
+
+    db.session.commit()
+    logger.info('Default users ready')
 
 
 # ==================== لود کاربر ====================
@@ -115,14 +164,19 @@ def captcha():
 # ==================== صفحه اصلی ====================
 @app.route('/')
 def index():
-    classes = Classroom.query.filter_by(is_active=True)\
-                             .order_by(Classroom.created_at.desc()).limit(6).all()
-    stats = {
-        'classes': Classroom.query.count(),
-        'users': User.query.count(),
-        'teachers': User.query.filter_by(role='teacher').count(),
-    }
-    return render_template('index.html', classes=classes, stats=stats)
+    try:
+        classes = Classroom.query.filter_by(is_active=True)\
+                                 .order_by(Classroom.created_at.desc()).limit(6).all()
+        stats = {
+            'classes': Classroom.query.count(),
+            'users': User.query.count(),
+            'teachers': User.query.filter_by(role='teacher').count(),
+        }
+        return render_template('index.html', classes=classes, stats=stats)
+    except Exception as e:
+        logger.error(f'Error in index: {str(e)}')
+        logger.error(traceback.format_exc())
+        return f"<h1>Error</h1><pre>{traceback.format_exc()}</pre>", 500
 
 
 # ==================== ثبت‌نام ====================
@@ -255,7 +309,6 @@ def search():
 
     results = query.order_by(Classroom.created_at.desc()).all()
 
-    # دسته‌بندی‌های موجود
     categories = db.session.query(Classroom.category)\
                            .filter(Classroom.category.isnot(None))\
                            .distinct().all()
@@ -354,14 +407,12 @@ def delete_class(class_id):
 def classroom(class_id):
     classroom_obj = Classroom.query.get_or_404(class_id)
 
-    # افزایش بازدید
     classroom_obj.views = (classroom_obj.views or 0) + 1
     db.session.commit()
 
     files = FileUpload.query.filter_by(classroom_id=class_id, file_type='file').all()
     videos = FileUpload.query.filter_by(classroom_id=class_id, file_type='video').all()
 
-    # چک ثبت‌نام
     is_enrolled = Enrollment.query.filter_by(
         student_id=current_user.id,
         classroom_id=class_id
@@ -425,7 +476,6 @@ def upload_file(class_id):
 
     ext = file.filename.rsplit('.', 1)[1].lower()
 
-    # تشخیص نوع فایل
     if ext in app.config['ALLOWED_VIDEO_EXTENSIONS']:
         file_type = 'video'
         folder = app.config['VIDEO_FOLDER']
@@ -627,12 +677,12 @@ def handle_message(data):
 
 # ==================== اجرا ====================
 if __name__ == '__main__':
-    import os
     port = int(os.environ.get('PORT', 5000))
+    logger.info(f'Starting server on port {port}')
     socketio.run(
         app,
         host='0.0.0.0',
         port=port,
-        debug=False,  # در محیط آنلاین، debug باید غیرفعال باشد
+        debug=False,
         allow_unsafe_werkzeug=True
     )
