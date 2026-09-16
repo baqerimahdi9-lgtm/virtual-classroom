@@ -636,11 +636,3 @@ if __name__ == '__main__':
         debug=False,  # در محیط آنلاین، debug باید غیرفعال باشد
         allow_unsafe_werkzeug=True
     )
-    print('Server: http://localhost:5000')
-    socketio.run(
-        app,
-        host='0.0.0.0',
-        port=5000,
-        debug=True,
-        allow_unsafe_werkzeug=True
-    )
